@@ -1,15 +1,14 @@
-'use strict';
-
 const fs = require('fs');
 
 module.exports = MLog;
 
-function MLog(opts) {
-  this.Options = Object.assign({}, MLog.defaultOptions, opts);
-}
 function isArrayOrObject(value) {
   const type = {}.toString.call(value);
   return type === '[object Array]' || type === '[object Object]';
+}
+
+function MLog(opts) {
+  this.options = Object.assign({}, MLog.defaultOptions, opts);
 }
 
 MLog.logLevel = {
@@ -22,38 +21,34 @@ MLog.logLevel = {
 
 MLog.defaultOptions = {
   dir: './logs/', // 日志输出目录
-  level: 'debug', // 启用以上日志级别
+  level: 'debug', // 输出以上日志级别
   createFolderByLevel: false, // 为每个日志级别创建文件夹
   consolePrint: false, // 同步输出到控制台
   format: '{datetime}\t[{level}]\t{message}' // 日志文本格式化
 };
 
-for (var p in MLog.logLevel) {
-  (function(p) {
-    MLog.prototype[p] = function(...args) {
-      let message = args.map(arg => (isArrayOrObject(arg) ? JSON.stringify(arg) : arg)).join('\t');
-      this.write(p, message);
-    };
-  })(p);
-}
+Object.keys(MLog.logLevel).forEach(key => {
+  MLog.prototype[key] = function(...args) {
+    let message = args.map(arg => (isArrayOrObject(arg) ? JSON.stringify(arg) : arg)).join('\t');
+    this.write(key, message);
+  };
+});
 
-MLog.prototype.write = function(level, message) {
-  var needWrite = MLog.logLevel[level] >= MLog.logLevel[this.Options.level];
-  if (needWrite) {
-    var line = this.Options.format,
-      filePath = this.Options.createFolderByLevel ? this.Options.dir + level + '/' : this.Options.dir,
-      fileName = new Date().toLocaleDateString() + '.log', // 每一天生成一个文件
-      createTime = new Date().toLocaleString(),
-      consolePrint = this.Options.consolePrint;
+MLog.prototype.write = function(lv, message) {
+  const { dir, level, createFolderByLevel, consolePrint, format } = this.options;
+  // 是否需要输出
+  if (MLog.logLevel[lv] >= MLog.logLevel[level]) {
+    const now = new Date(),
+      filePath = createFolderByLevel ? dir + lv + '/' : dir,
+      fileName = now.toLocaleDateString() + '.log',
+      createTime = now.toLocaleString();
 
     // 创建 logs 文件夹
-    !fs.existsSync(this.Options.dir) && fs.mkdirSync(this.Options.dir);
+    !fs.existsSync(dir) && fs.mkdirSync(dir);
     // 创建 level 文件夹
-    this.Options.createFolderByLevel && !fs.existsSync(filePath) && fs.mkdirSync(filePath);
+    createFolderByLevel && !fs.existsSync(filePath) && fs.mkdirSync(filePath);
 
-    line = line.replace('{datetime}', createTime);
-    line = line.replace('{level}', level);
-    line = line.replace('{message}', message);
+    const line = format.replace('{datetime}', createTime).replace('{level}', lv).replace('{message}', message);
     fs.appendFile(filePath + fileName, line + '\n', err => err && console.error(err));
     consolePrint && console.log(line);
   }
