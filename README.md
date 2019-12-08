@@ -4,7 +4,7 @@
 
 ## 使用方式
 
-```
+```js
     const MLog = require('./mlog');
 
     // 默认配置
@@ -23,7 +23,11 @@
     log.error('error');
     log.fatal('fatal');
 
-    log.error({ dx: 1, dxf: { s: { fd: { dfsfs: { a: 1 } } } } }, 'XXXXXXXX', Date.now(), new Error('ZZZZZZZZZZZ'));
+    log.error(
+        { dx: 1, dxf: { s: { fd: { dfsfs: { a: 1 } } } } }, 
+        'XXXXXXXX', Date.now(), 
+        new Error('ZZZZZZZZZZZ')
+    );
 
     log.error('错误的配置', { a: 1 });
 ```
